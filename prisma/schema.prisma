@@ -1,0 +1,26 @@
+// Set the provider to PostgreSQL using connection URL from .env
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Generator to use Prisma Client in code
+generator client {
+  provider = "prisma-client-js"
+}
+
+// User model to start (roles will be extended)
+model User {
+  id        String   @id @default(uuid()) // Unique identifier
+  email     String   @unique              // User email (must be unique)
+  password  String?                       // Nullable for OAuth users
+  role      Role                         // Enum for Admin/Organizer/Customer
+  createdAt DateTime @default(now())     // When the user was created
+}
+
+// User roles for RBAC
+enum Role {
+  ADMIN
+  ORGANIZER
+  CUSTOMER
+}
