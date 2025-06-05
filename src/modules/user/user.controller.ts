@@ -1,23 +1,30 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import * as userService from "./user.service";
+import {AppError} from "../../utils/AppError";
 
-export const getUsers = async (req: Request, res: Response): Promise<void> => {
+export const getUsers = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
     try {
         const users = await userService.getUsers();
         res.status(200).json(users);
     } catch (error) {
-        console.error("Error in /users:", error);
-        res.status(500).json({ error: "Failed to fetch users" });
+        next(error);
     }
 };
 
-export const registerUser = async (req: Request, res: Response): Promise<void> => {
+export const registerUser = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
     try {
         const { email, password, role } = req.body;
 
         if (!email || !password) {
-            res.status(400).json({ error: "Email and password are required" });
-            return;
+            throw new AppError("Email and password are required", 400);
         }
 
         const newUser = await userService.createUser({ email, password });
@@ -31,18 +38,20 @@ export const registerUser = async (req: Request, res: Response): Promise<void> =
             },
         });
     } catch (error) {
-        console.error("Error in /register:", error);
-        res.status(500).json({ error: "Registration failed" });
+        next(error);
     }
 }
 
-export const updateUser = async (req: Request, res: Response): Promise<void> => {
+export const updateUser = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
     try {
         const { id, email, password, role } = req.body;
 
         if (!id) {
-            res.status(400).json({ error: "User ID is required for update" });
-            return;
+            throw new AppError("User ID is required for update", 400);
         }
 
         const updatedUser = await userService.updateUser(id, { email, password, role });
@@ -56,7 +65,6 @@ export const updateUser = async (req: Request, res: Response): Promise<void> => 
             },
         });
     } catch (error) {
-        console.error("Error in /update:", error);
-        res.status(500).json({ error: "Update failed" });
+        next(error)
     }
 };

@@ -1,10 +1,10 @@
-// Import core libraries for server setup
 import express from "express"; // Main framework for HTTP handling
 import dotenv from "dotenv"; // For reading values from .env file
 import cors from "cors"; // Handles CORS errors for API calls from frontend
 import morgan from "morgan"; // Logs all HTTP requests to the console
 import helmet from "helmet"; // Adds basic security headers to requests
-import userRoutes from "./modules/user/user.routes"; // Import user routes
+import userRoutes from "./modules/user/user.routes";
+import { errorHandler } from "./middleware/errorHandler";
 
 dotenv.config(); // Load all environment variables from .env file
 
@@ -24,11 +24,8 @@ app.use(express.json());
 
 // Import and use the user routes
 app.use("/api/users", userRoutes)
-
-// Sample test route to check if server is running
-app.get("/", (req, res) => {
-    res.send("🎟️ Ticketer backend running");
-});
+// Use custom error handler middleware to catch and respond to errors
+app.use(errorHandler);
 
 // Start the server on the defined port (from .env or fallback to 3000)
 app.listen(process.env.PORT || 3000, () => {

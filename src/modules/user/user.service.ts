@@ -1,4 +1,5 @@
 import {PrismaClient, Role} from "@prisma/client"
+import {handlePrismaError} from "../../utils/prismaErrorHandler";
 
 const prisma = new PrismaClient();
 
@@ -12,8 +13,7 @@ export const getUsers = async () => {
     try {
         return await prisma.user.findMany();
     } catch (error) {
-        console.error("Error fetching users:", error);
-        throw error;
+        throw handlePrismaError(error);
     }
 }
 
@@ -25,8 +25,7 @@ export const createUser = async (userData: User) => {
         });
 
     } catch (error) {
-        console.error("Error creating user:", error);
-        throw error;
+        throw handlePrismaError(error);
     }
 }
 
@@ -37,7 +36,6 @@ export const updateUser = async (id: string, userData: Partial<User>) => {
             data: userData,
         });
     } catch (error) {
-        console.error("Error updating user:", error);
-        throw error;
+        throw handlePrismaError(error);
     }
 };
