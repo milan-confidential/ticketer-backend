@@ -9,14 +9,31 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// User model to start (roles will be extended)
+// User table to store core user info (excluding password)
 model User {
-  id        String   @id @default(uuid()) // Unique identifier
-  email     String   @unique // User email (must be unique)
-  password  String? // Nullable for OAuth users
-  role      Role     @default(ADMIN) // Enum for Admin/Organizer/Customer
+  id        String   @id @default(uuid()) // Unique ID for the user (auto-generated UUID)
+  email     String   @unique // Unique email address for login
+  role      Role     @default(ADMIN) // User's role (ADMIN, ORGANIZER, CUSTOMER)
   createdAt DateTime @default(now()) // When the user was created
-  updatedAt DateTime @updatedAt // When the user was last updated
+  updatedAt DateTime @updatedAt // Auto-updates whenever user record is changed
+
+  passwords Password[] // 🔗 One-to-many relation: user can have multiple passwords
+}
+
+// Password table to store hashed passwords and maintain history
+model Password {
+  id        String   @id @default(uuid()) // Unique ID for each password record
+  userId    String // Foreign key to the user this password belongs to
+  hash      String // Hashed password (e.g., bcrypt)
+  isActive  Boolean  @default(true) // Only one active password at a time per user
+  createdAt DateTime @default(now()) // When this password record was created
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // 🔗 Connects password back to its user
+  // 🧹 Cascade: when a user is deleted, their passwords are too
+
+  @@unique([userId, isActive]) // 🚫 Enforce only one active password per user
+  @@index([userId]) // 🔍 Index for fast lookups by userId (e.g., during login)
 }
 
 // User roles for RBAC
