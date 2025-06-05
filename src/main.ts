@@ -4,6 +4,7 @@ import dotenv from "dotenv"; // For reading values from .env file
 import cors from "cors"; // Handles CORS errors for API calls from frontend
 import morgan from "morgan"; // Logs all HTTP requests to the console
 import helmet from "helmet"; // Adds basic security headers to requests
+import userRoutes from "./modules/user/user.routes"; // Import user routes
 
 dotenv.config(); // Load all environment variables from .env file
 
@@ -20,6 +21,9 @@ app.use(morgan("dev"));
 
 // Enable express to parse JSON body data in requests
 app.use(express.json());
+
+// Import and use the user routes
+app.use("/api/users", userRoutes)
 
 // Sample test route to check if server is running
 app.get("/", (req, res) => {

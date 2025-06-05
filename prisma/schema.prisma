@@ -12,10 +12,11 @@ generator client {
 // User model to start (roles will be extended)
 model User {
   id        String   @id @default(uuid()) // Unique identifier
-  email     String   @unique              // User email (must be unique)
-  password  String?                       // Nullable for OAuth users
-  role      Role                         // Enum for Admin/Organizer/Customer
-  createdAt DateTime @default(now())     // When the user was created
+  email     String   @unique // User email (must be unique)
+  password  String? // Nullable for OAuth users
+  role      Role     @default(ADMIN) // Enum for Admin/Organizer/Customer
+  createdAt DateTime @default(now()) // When the user was created
+  updatedAt DateTime @updatedAt // When the user was last updated
 }
 
 // User roles for RBAC
