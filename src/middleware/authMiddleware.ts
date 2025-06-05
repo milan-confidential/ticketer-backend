@@ -9,7 +9,7 @@ interface JwtPayload {
     exp: number;
 }
 
-export const authenticateJWT = (
+export const authMiddleware = (
     req: Request,
     res: Response,
     next: NextFunction

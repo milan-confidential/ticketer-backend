@@ -2,7 +2,7 @@ import express from "express"; // Main framework for HTTP handling
 import cors from "cors"; // Handles CORS errors for API calls from frontend
 import morgan from "morgan"; // Logs all HTTP requests to the console
 import helmet from "helmet"; // Adds basic security headers to requests
-import userRoutes from "./modules/user/user.routes";
+import apiRoutes from "./routes"; // Import main router
 import { errorHandler } from "./middleware/errorHandler";
 import { notFoundHandler } from "./middleware/notFoundHandler";
 
@@ -19,9 +19,8 @@ app.use(morgan("dev"));
 app.use(express.json());
 
 
-/** Routes setup */
-// Import and use the user routes
-app.use("/api/users", userRoutes)
+/** API routes */
+app.use("/api", apiRoutes);
 
 
 /** Catch unmatched routes */
