@@ -5,8 +5,12 @@ import helmet from "helmet"; // Adds basic security headers to requests
 import apiRoutes from "./routes"; // Import main router
 import { errorHandler } from "./middleware/errorHandler";
 import { notFoundHandler } from "./middleware/notFoundHandler";
+import { swaggerSpec, swaggerUi } from "./swagger/swagger.config";
 
 export const app = express(); // Initialize express application
+
+// Serve Swagger docs at /api-docs
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 /** Middleware setup */
 // Use CORS to allow frontend (e.g. React app) to communicate with backend

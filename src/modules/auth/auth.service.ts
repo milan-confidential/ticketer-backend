@@ -44,19 +44,3 @@ export const authenticateUser = async (
     // Return user data (without password ideally, you can customize)
     return user;
 };
-
-export const getUserById = async (id: string) => {
-    try {
-        return await prisma.user.findUnique({
-            where: {id},
-            select: {
-                id: true,
-                email: true,
-                role: true,
-            }
-        });
-    } catch (error) {
-        console.error("Error fetching user by ID:", error);
-        throw error;
-    }
-};

@@ -67,3 +67,18 @@ export const updateUser = async (id: string, userData: Partial<User>) => {
         throw handlePrismaError(error);
     }
 };
+
+export const getUserById = async (id: string) => {
+    try {
+        return await prisma.user.findUnique({
+            where: {id},
+            select: {
+                id: true,
+                email: true,
+                role: true,
+            }
+        });
+    } catch (error) {
+        throw handlePrismaError(error);
+    }
+};

@@ -33,28 +33,6 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
     }
 };
 
-/**
- * Controller to get logged-in user's profile
- */
-export const getProfile = async (req: Request, res: Response, next: NextFunction) => {
-    try {
-        // Assuming you have userId stored in req.user from auth middleware
-        const userId = req.user?.id;
-        if (!userId) {
-            throw new AppError("Unauthorized", 401);
-        }
-
-        const user = await authService.getUserById(userId);
-        if (!user) {
-            throw new AppError("User not found", 404);
-        }
-
-        res.status(200).json(user);
-    } catch (error) {
-        next(error);
-    }
-};
-
 export const logout = async (req: Request, res: Response, next: NextFunction) => {
     try {
         res.status(200).json({ message: "Logout successful" });
