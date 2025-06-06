@@ -90,3 +90,24 @@ export const getProfile = async (req: Request, res: Response, next: NextFunction
         next(error);
     }
 };
+
+export const changePassword = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        const userId = req.user?.id;
+        const { oldPassword, newPassword } = req.body;
+
+        if (!userId || !oldPassword || !newPassword) {
+            throw new AppError("User ID, old password, and new password are required", 400);
+        }
+
+        const updatedUser = await userService.changePassword(userId, oldPassword, newPassword);
+
+        res.status(200).json(updatedUser);
+    } catch (error) {
+        next(error);
+    }
+};

@@ -32,7 +32,7 @@ model Password {
   // 🔗 Connects password back to its user
   // 🧹 Cascade: when a user is deleted, their passwords are too
 
-  @@unique([userId, isActive]) // 🚫 Enforce only one active password per user
+  // @@unique([userId, isActive]) // 🚫 Enforce only one active password per user
   @@index([userId]) // 🔍 Index for fast lookups by userId (e.g., during login)
 }
 

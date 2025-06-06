@@ -1,6 +1,7 @@
 import {PrismaClient, Role} from "@prisma/client"
 import {handlePrismaError} from "../../utils/prismaErrorHandler";
-import {hashPassword} from "../../utils/passwordUtils";
+import {hashPassword, comparePassword} from "../../utils/passwordUtils";
+import {AppError} from "../../utils/AppError";
 
 const prisma = new PrismaClient();
 
@@ -82,3 +83,67 @@ export const getUserById = async (id: string) => {
         throw handlePrismaError(error);
     }
 };
+
+export const changePassword = async (userId: string, oldPassword: string, newPassword: string) => {
+    try {
+        // 1. Verify current password
+        const currentPassword = await prisma.password.findFirst({
+            where: { userId, isActive: true },
+            select: { id: true, hash: true }
+        });
+
+        if (!currentPassword) throw new AppError("No active password found", 404);
+
+        if (!await comparePassword(oldPassword, currentPassword.hash)) {
+            throw new AppError("Old password is incorrect", 401);
+        }
+
+        // 2. Check if new password matches current
+        if (await comparePassword(newPassword, currentPassword.hash)) {
+            throw new AppError("New password cannot be same as current", 400);
+        }
+
+        // 3. Check against password history (last 5 passwords)
+        const previousPasswords = await prisma.password.findMany({
+            where: {
+                userId,
+                id: { not: currentPassword.id }
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 5,
+            select: { hash: true }
+        });
+
+        for (const p of previousPasswords) {
+            if (await comparePassword(newPassword, p.hash)) {
+                throw new AppError("New password cannot be same as any of the last 5 passwords", 400);
+            }
+        }
+
+        // 4. Hash the new password
+        const newHash = await hashPassword(newPassword);
+
+        // 5. Perform the password change in a transaction
+        return await prisma.$transaction(async (prisma) => {
+            // Deactivate all passwords for this user
+            await prisma.password.updateMany({
+                where: { userId },
+                data: { isActive: false }
+            });
+
+            // Create new active password
+            await prisma.password.create({
+                data: {
+                    userId,
+                    hash: newHash,
+                    isActive: true
+                }
+            });
+
+            return { message: "Password changed successfully" };
+        });
+
+    } catch (error) {
+        throw handlePrismaError(error);
+    }
+}
