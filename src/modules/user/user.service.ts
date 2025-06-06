@@ -84,66 +84,176 @@ export const getUserById = async (id: string) => {
     }
 };
 
+/**
+ * Changes a user's password after verifying old password and validating new password requirements
+ * @param userId - ID of the user changing their password
+ * @param oldPassword - Current active password for verification
+ * @param newPassword - New password to set
+ * @returns Success message or throws an error
+ */
 export const changePassword = async (userId: string, oldPassword: string, newPassword: string) => {
     try {
-        // 1. Verify current password
+        // =================================
+        // 1. CURRENT PASSWORD VERIFICATION
+        // =================================
+        // Retrieve the currently active password
         const currentPassword = await prisma.password.findFirst({
-            where: { userId, isActive: true },
-            select: { id: true, hash: true }
+            where: {
+                userId,
+                isActive: true
+            },
+            select: {
+                id: true,
+                hash: true
+            }
         });
 
-        if (!currentPassword) throw new AppError("No active password found", 404);
+        // Verify an active password exists
+        if (!currentPassword) {
+            throw new AppError("No active password found", 404);
+        }
 
-        if (!await comparePassword(oldPassword, currentPassword.hash)) {
+        // Validate that the provided old password matches
+        const isOldPasswordValid = await comparePassword(oldPassword, currentPassword.hash);
+        if (!isOldPasswordValid) {
             throw new AppError("Old password is incorrect", 401);
         }
 
-        // 2. Check if new password matches current
-        if (await comparePassword(newPassword, currentPassword.hash)) {
-            throw new AppError("New password cannot be same as current", 400);
+        // ====================================
+        // 2. NEW PASSWORD VALIDATION CHECKS
+        // ====================================
+        // Prevent using the same password as current
+        const isSameAsCurrent = await comparePassword(newPassword, currentPassword.hash);
+        if (isSameAsCurrent) {
+            throw new AppError("New password cannot be the same as current password", 400);
         }
 
-        // 3. Check against password history (last 5 passwords)
+        // Check against recent password history (last 5 passwords)
         const previousPasswords = await prisma.password.findMany({
             where: {
                 userId,
-                id: { not: currentPassword.id }
+                id: { not: currentPassword.id } // Exclude current password
             },
-            orderBy: { createdAt: 'desc' },
-            take: 5,
+            orderBy: { createdAt: 'desc' }, // Get most recent first
+            take: 5, // Limit to last 5 passwords
             select: { hash: true }
         });
 
-        for (const p of previousPasswords) {
-            if (await comparePassword(newPassword, p.hash)) {
-                throw new AppError("New password cannot be same as any of the last 5 passwords", 400);
+        // Verify new password doesn't match any historical passwords
+        for (const password of previousPasswords) {
+            const isHistoricalMatch = await comparePassword(newPassword, password.hash);
+            if (isHistoricalMatch) {
+                throw new AppError(
+                    "New password cannot be the same as any of your last 5 passwords",
+                    400
+                );
             }
         }
 
-        // 4. Hash the new password
-        const newHash = await hashPassword(newPassword);
+        // ==============================
+        // 3. PASSWORD UPDATE OPERATIONS
+        // ==============================
+        // Generate secure hash of the new password
+        const newPasswordHash = await hashPassword(newPassword);
 
-        // 5. Perform the password change in a transaction
-        return await prisma.$transaction(async (prisma) => {
-            // Deactivate all passwords for this user
-            await prisma.password.updateMany({
+        // Execute as atomic transaction
+        return await prisma.$transaction(async (tx) => {
+            // 3a. Deactivate all existing passwords
+            await tx.password.updateMany({
                 where: { userId },
                 data: { isActive: false }
             });
 
-            // Create new active password
-            await prisma.password.create({
+            // 3b. Create new active password record
+            await tx.password.create({
                 data: {
                     userId,
-                    hash: newHash,
-                    isActive: true
+                    hash: newPasswordHash,
+                    isActive: true,
+                    createdAt: new Date() // Explicit timestamp
                 }
             });
 
-            return { message: "Password changed successfully" };
+            return {
+                message: "Password changed successfully"
+            };
         });
 
     } catch (error) {
+        // Handle any errors that occur during the process
         throw handlePrismaError(error);
     }
-}
+};
+
+/**
+ * Resets a user's password after verifying the new password doesn't match any existing passwords
+ * @param email - User's email address
+ * @param newPassword - New password to set
+ * @returns Success message or throws an error
+ */
+export const resetPassword = async (email: string, newPassword: string) => {
+    try {
+        // ======================
+        // 1. USER VERIFICATION
+        // ======================
+        // Find user by email to ensure they exist
+        const user = await prisma.user.findUnique({
+            where: { email },
+            select: { id: true } // Only select the ID we need
+        });
+
+        if (!user) {
+            throw new AppError("User not found", 404);
+        }
+
+        // ==============================
+        // 2. PASSWORD HISTORY VALIDATION
+        // ==============================
+        // Retrieve all existing passwords for this user
+        const existingPasswords = await prisma.password.findMany({
+            where: { userId: user.id },
+            select: { hash: true } // Only need the hashes for comparison
+        });
+
+        // Check if new password matches any existing password (current or historical)
+        for (const password of existingPasswords) {
+            const isMatch = await comparePassword(newPassword, password.hash);
+            if (isMatch) {
+                throw new AppError(
+                    "New password cannot be the same as current or previous passwords",
+                    400
+                );
+            }
+        }
+
+        // ========================
+        // 3. PASSWORD UPDATE FLOW
+        // ========================
+        // Hash the new password before storing
+        const newPasswordHash = await hashPassword(newPassword);
+
+        // Execute as a transaction to ensure data consistency
+        return await prisma.$transaction(async (tx) => {
+            // 3a. Deactivate all existing passwords
+            await tx.password.updateMany({
+                where: { userId: user.id },
+                data: { isActive: false }
+            });
+
+            // 3b. Create new active password record
+            await tx.password.create({
+                data: {
+                    userId: user.id,
+                    hash: newPasswordHash,
+                    isActive: true,
+                },
+            });
+
+            return { message: "Password reset successfully" };
+        });
+
+    } catch (error) {
+        // Handle any errors that occur during the process
+        throw handlePrismaError(error);
+    }
+};

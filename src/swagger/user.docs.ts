@@ -134,3 +134,31 @@
  *       500:
  *         description: Internal server error
  */
+
+/**
+ * @swagger
+ * /user/reset-password:
+ *   put:
+ *     summary: Reset user password
+ *     tags: [User]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ *       400:
+ *         description: Invalid input
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Internal server error
+ */

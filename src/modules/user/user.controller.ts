@@ -111,3 +111,23 @@ export const changePassword = async (
         next(error);
     }
 };
+
+export const resetPassword = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        const { email, newPassword } = req.body;
+
+        if (!email || !newPassword) {
+            throw new AppError("Email and new password are required", 400);
+        }
+
+        const updatedUser = await userService.resetPassword(email, newPassword);
+
+        res.status(200).json(updatedUser);
+    } catch (error) {
+        next(error);
+    }
+};
