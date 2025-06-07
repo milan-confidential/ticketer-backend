@@ -28,6 +28,7 @@ model Password {
   isActive  Boolean  @default(true) // Only one active password at a time per user
   createdAt DateTime @default(now()) // When this password record was created
 
+  // Relation back to User with cascading delete
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   // 🔗 Connects password back to its user
   // 🧹 Cascade: when a user is deleted, their passwords are too
@@ -36,9 +37,171 @@ model Password {
   @@index([userId]) // 🔍 Index for fast lookups by userId (e.g., during login)
 }
 
-// User roles for RBAC
+// User roles for Role-Based Access Control (RBAC)
 enum Role {
   ADMIN
   ORGANIZER
   CUSTOMER
+}
+
+/// =========================
+/// 🏏 Cricket Core Models
+/// =========================
+
+// ISO country codes (3-letter)
+enum CountryCode {
+  IND
+  AUS
+  ENG
+  PAK
+  SA
+  NZ
+  SL
+  BAN
+  WI
+  AFG
+  ZIM
+  IRE
+  NAM
+  SCO
+  NEP
+}
+
+// Team classification
+enum TeamType {
+  International
+  Domestic
+  League
+}
+
+// Types of series/tournaments
+enum SeriesType {
+  Bilateral
+  League
+  Knockout
+  RoundRobin
+}
+
+// Match formats used in series
+enum MatchFormat {
+  Test
+  ODI
+  T20
+}
+
+// Permanent player role/skill
+enum PlayerRole {
+  Batsman
+  Bowler
+  AllRounder
+  Wicketkeeper
+}
+
+/// =========================
+/// 📁 Main Domain Models
+/// =========================
+
+model Team {
+  id        String     @id @default(uuid())       // Unique team ID
+  name      String                                 // Team name (e.g. India, CSK)
+  country   CountryCode                            // Team's country code
+  type      TeamType                               // Team type
+  logoUrl   String?                                // Optional logo URL
+  createdAt DateTime   @default(now())            // Creation timestamp
+  updatedAt DateTime   @updatedAt                 // Last update
+
+  playerTeams             PlayerTeam[]             // History of players in team
+  seriesFormatTeams       SeriesFormatTeam[]       // Series format entries
+  seriesFormatTeamPlayers SeriesFormatTeamPlayer[] // Selected players in formats
+}
+
+model Player {
+  id           String      @id @default(uuid())    // Unique player ID
+  fullName     String                               // Full name
+  dob          DateTime                             // Date of birth
+  country      CountryCode                          // National origin
+  battingStyle String                               // e.g., Right-hand bat
+  bowlingStyle String                               // e.g., Right-arm fast
+  role         PlayerRole                           // Core skill/role
+  active       Boolean                              // Whether still playing
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  playerTeams             PlayerTeam[]
+  seriesFormatTeamPlayers SeriesFormatTeamPlayer[]
+}
+
+model PlayerTeam {
+  id        String   @id @default(uuid())          // ID
+  playerId  String                                 // FK to Player
+  teamId    String                                 // FK to Team
+  startDate DateTime                               // Joined date
+  endDate   DateTime?                              // Optional leave date
+  createdAt DateTime @default(now())
+
+  player Player @relation(fields: [playerId], references: [id])
+  team   Team   @relation(fields: [teamId], references: [id])
+
+  @@index([playerId, endDate])                     // Fast query for current teams
+}
+
+model Series {
+  id          String              @id @default(uuid()) // Series ID
+  name        String                                    // Series name
+  description String?                                   // Optional description
+  type        SeriesType                                // Series type (e.g. Bilateral)
+  startDate   DateTime                                  // Series start
+  endDate     DateTime                                  // Series end
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  seriesFormats   SeriesFormat[]
+  hostCountries   SeriesHostCountry[]
+
+  @@index([startDate, endDate])                         // For filtering by schedule
+}
+
+model SeriesHostCountry {
+  id        String       @id @default(uuid())       // ID
+  seriesId  String                                   // FK to Series
+  country   CountryCode                              // Hosting country code
+
+  series Series @relation(fields: [seriesId], references: [id])
+}
+
+model SeriesFormat {
+  id         String     @id @default(uuid())        // Format ID
+  seriesId   String                                  // FK to Series
+  format     MatchFormat                             // Test / ODI / T20
+  matchCount Int                                     // Matches in this format
+
+  series                   Series                   @relation(fields: [seriesId], references: [id])
+  seriesFormatTeams        SeriesFormatTeam[]
+  seriesFormatTeamPlayers  SeriesFormatTeamPlayer[]
+}
+
+model SeriesFormatTeam {
+  id              String        @id @default(uuid()) // Team entry ID
+  seriesFormatId  String                                 // FK to SeriesFormat
+  teamId          String                                 // FK to Team
+
+  seriesFormat SeriesFormat @relation(fields: [seriesFormatId], references: [id])
+  team         Team         @relation(fields: [teamId], references: [id])
+}
+
+// Players selected for a particular team in a specific series format
+model SeriesFormatTeamPlayer {
+  id              String   @id @default(uuid())     // Selection ID
+  seriesFormatId  String                             // FK to SeriesFormat
+  teamId          String                             // FK to Team
+  playerId        String                             // FK to Player
+
+  isCaptain       Boolean  @default(false)           // True if captain
+  isWicketkeeper  Boolean  @default(false)           // True if keeping wickets
+
+  createdAt       DateTime @default(now())
+
+  seriesFormat SeriesFormat @relation(fields: [seriesFormatId], references: [id])
+  team         Team         @relation(fields: [teamId], references: [id])
+  player       Player       @relation(fields: [playerId], references: [id])
 }
