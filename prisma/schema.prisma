@@ -69,32 +69,32 @@ enum CountryCode {
 
 // Team classification
 enum TeamType {
-  International
-  Domestic
-  League
+  INTERNATIONAL
+  DOMESTIC
+  LEAGUE
 }
 
 // Types of series/tournaments
 enum SeriesType {
-  Bilateral
-  League
-  Knockout
-  RoundRobin
+  BILATERAL
+  LEAGUE
+  KNOCKOUT
+  ROUND_ROBIN
 }
 
 // Match formats used in series
 enum MatchFormat {
-  Test
+  TEST
   ODI
   T20
 }
 
 // Permanent player role/skill
 enum PlayerRole {
-  Batsman
-  Bowler
-  AllRounder
-  Wicketkeeper
+  BATSMAN
+  BOWLER
+  ALL_ROUNDER
+  WICKET_KEEPER
 }
 
 /// =========================
