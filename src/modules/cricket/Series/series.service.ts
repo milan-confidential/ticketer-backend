@@ -6,12 +6,7 @@ const prisma = new PrismaClient();
 
 export const getAll = async () => {
     try {
-        return await prisma.series.findMany({
-            include: {
-                seriesFormats: true,
-                hostCountries: true,
-            },
-        });
+        return await prisma.series.findMany();
     } catch (error) {
         throw handlePrismaError(error);
     }
@@ -151,6 +146,73 @@ export const deleteSeries = async (id: string) => {
         // Delete the series
         return await prisma.series.delete({
             where: { id },
+        });
+    } catch (error) {
+        throw handlePrismaError(error);
+    }
+};
+
+export const updateSeriesHosts = async (id: string, hosts: string[]) => {
+    try {
+        // Validate required fields
+        if (!id) {
+            throw new AppError("Series ID is required", 400);
+        }
+
+        await prisma.seriesHostCountry.deleteMany({
+            where: { seriesId: id },
+        });
+
+        return await prisma.seriesHostCountry.createMany({
+            data: hosts.map((countryId) => ({
+                seriesId: id,
+                countryId,
+            })),
+        })
+    } catch (error) {
+        throw handlePrismaError(error);
+    }
+};
+
+export const updateSeriesTeams = async (id: string, teams: string[]) => {
+    try {
+        // Validate required fields
+        if (!id) {
+            throw new AppError("Series ID is required", 400);
+        }
+
+        await prisma.seriesTeam.deleteMany({
+            where: { seriesId: id },
+        });
+
+        return await prisma.seriesTeam.createMany({
+            data: teams.map((teamId) => ({
+                seriesId: id,
+                teamId,
+            })),
+        });
+    } catch (error) {
+        throw handlePrismaError(error);
+    }
+};
+
+export const updateSeriesFormats = async (id: string, formats: any[]) => {
+    try {
+        // Validate required fields
+        if (!id) {
+            throw new AppError("Series ID is required", 400);
+        }
+
+        await prisma.seriesFormat.deleteMany({
+            where: { seriesId: id },
+        });
+
+        return await prisma.seriesFormat.createMany({
+            data: formats.map((format) => ({
+                seriesId: id,
+                format: format.format,
+                matchCount: format.matchCount,
+            })),
         });
     } catch (error) {
         throw handlePrismaError(error);

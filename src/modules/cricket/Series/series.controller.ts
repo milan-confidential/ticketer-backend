@@ -86,3 +86,63 @@ export const deleteSeries = async (
         next(error);
     }
 };
+
+export const updateSeriesHosts = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const { id } = req.params;
+        const { hosts } = req.body;
+
+        if (!id) {
+            throw new AppError('Series ID is required', 400);
+        }
+
+        const updatedSeries = await seriesService.updateSeriesHosts(id, hosts);
+        res.json(updatedSeries);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const updateSeriesTeams = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const { id } = req.params;
+        const { teams } = req.body;
+
+        if (!id) {
+            throw new AppError('Series ID is required', 400);
+        }
+
+        const updatedSeries = await seriesService.updateSeriesTeams(id, teams);
+        res.json(updatedSeries);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const updateSeriesFormats = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const { id } = req.params;
+        const { formats } = req.body;
+
+        if (!id) {
+            throw new AppError('Series ID is required', 400);
+        }
+
+        const updatedSeries = await seriesService.updateSeriesFormats(id, formats);
+        res.json(updatedSeries);
+    } catch (error) {
+        next(error);
+    }
+};
