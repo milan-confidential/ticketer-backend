@@ -1,0 +1,143 @@
+// Use DBML to define your database structure
+// Docs: https://dbml.dbdiagram.io/docs
+
+Enum TeamType {
+  INTERNATIONAL
+  DOMESTIC
+  LEAGUE
+}
+
+Enum PlayerRole {
+  BATSMAN
+  BOWLER
+  ALL_ROUNDER
+  WICKET_KEEPER
+}
+
+Enum SeriesType {
+  BILATERAL
+  LEAGUE
+  KNOCKOUT
+  ROUND_ROBIN
+}
+
+Enum MatchFormat {
+  TEST
+  ODI
+  T20
+}
+
+Table Country {
+  id uuid [pk]
+  code varchar [unique, note: "ISO Alpha-3 code (e.g. IND, AUS)"]
+  name varchar
+  flagUrl varchar
+}
+
+Table Team {
+  id uuid [pk]
+  name varchar
+  type TeamType
+  logoUrl varchar
+  countryId uuid [ref: > Country.id]
+  createdAt datetime
+  updatedAt datetime
+}
+
+Table Player {
+  id uuid [pk]
+  fullName varchar
+  dob date
+  countryId uuid [ref: > Country.id]
+  battingStyle varchar
+  bowlingStyle varchar
+  role PlayerRole
+  active boolean
+  createdAt datetime
+  updatedAt datetime
+}
+
+Table PlayerTeam {
+  id uuid [pk]
+  playerId uuid [ref: > Player.id]
+  teamId uuid [ref: > Team.id]
+  startDate datetime
+  endDate datetime
+  createdAt datetime
+  updatedAt datetime
+
+  indexes {
+    (playerId, teamId, startDate) [unique]
+  }
+}
+
+Table Series {
+  id uuid [pk]
+  name varchar
+  description text
+  type SeriesType
+  startDate datetime
+  endDate datetime
+  createdAt datetime
+  updatedAt datetime
+}
+
+Table SeriesHostCountry {
+  id uuid [pk]
+  seriesId uuid [ref: > Series.id]
+  countryId uuid [ref: > Country.id]
+  createdAt datetime
+  updatedAt datetime
+
+  indexes {
+    (seriesId, countryId) [unique]
+  }
+}
+
+Table SeriesTeam {
+  id uuid [pk]
+  seriesId uuid [ref: > Series.id]
+  teamId uuid [ref: > Team.id]
+  createdAt datetime
+  updatedAt datetime
+
+  indexes {
+    (seriesId, teamId) [unique]
+  }
+}
+
+Table SeriesFormat {
+  id uuid [pk]
+  seriesId uuid [ref: > Series.id]
+  format MatchFormat
+  matchCount int
+  createdAt datetime
+  updatedAt datetime
+}
+
+Table SeriesFormatTeam {
+  id uuid [pk]
+  seriesFormatId uuid [ref: > SeriesFormat.id]
+  teamId uuid [ref: > Team.id]
+  createdAt datetime
+  updatedAt datetime
+
+  indexes {
+    (seriesFormatId, teamId) [unique]
+  }
+}
+
+Table SeriesFormatTeamPlayer {
+  id uuid [pk]
+  seriesFormatId uuid [ref: > SeriesFormat.id]
+  teamId uuid [ref: > Team.id]
+  playerId uuid [ref: > Player.id]
+  isCaptain boolean
+  isWicketkeeper boolean
+  createdAt datetime
+  updatedAt datetime
+
+  indexes {
+    (seriesFormatId, teamId, playerId) [unique]
+  }
+}

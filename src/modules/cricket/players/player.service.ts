@@ -25,33 +25,36 @@ export const getById = async (id: string) => {
 
 export const createPlayer = async (playerData: any) => {
     try {
-        const teamId = playerData?.teamId;
-        if (teamId) {
-            // Validate that the team exists before creating a player
-            const existingTeam = await prisma.team.findUnique({
-                where: { id: teamId },
-            });
-            if (!existingTeam) {
-                throw new AppError('Team not found', 404);
-            }
-        }
+        const teamId = playerData?.countryId;
+        console.log('===29,', teamId)
+        // if (teamId) {
+        //     // Validate that the team exists before creating a player
+        //     const existingTeam = await prisma.team.findUnique({
+        //         where: { id: teamId },
+        //     });
+        //     if (!existingTeam) {
+        //         throw new AppError('Team not found', 404);
+        //     }
+        // }
+
+        console.log('---', playerData)
 
         // Create the player
-        delete playerData.teamId; // Remove teamId if it's not needed in player data
+        // delete playerData.teamId; // Remove teamId if it's not needed in player data
 
         const player = await prisma.player.create({
             data: playerData
         });
         // If teamId was provided, link the player to the team
-        if (teamId) {
-            await prisma.playerTeam.create({
-                data: {
-                    playerId: player.id,
-                    teamId: teamId,
-                    startDate: new Date(), // you can allow this as input too
-                },
-            });
-        }
+        // if (teamId) {
+        //     await prisma.playerTeam.create({
+        //         data: {
+        //             playerId: player.id,
+        //             teamId: teamId,
+        //             startDate: new Date(), // you can allow this as input too
+        //         },
+        //     });
+        // }
         return player;
     } catch (error) {
         throw handlePrismaError(error);

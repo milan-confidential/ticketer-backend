@@ -101,107 +101,148 @@ enum PlayerRole {
 /// 📁 Main Domain Models
 /// =========================
 
-model Team {
-  id        String     @id @default(uuid())       // Unique team ID
-  name      String                                 // Team name (e.g. India, CSK)
-  country   CountryCode                            // Team's country code
-  type      TeamType                               // Team type
-  logoUrl   String?                                // Optional logo URL
-  createdAt DateTime   @default(now())            // Creation timestamp
-  updatedAt DateTime   @updatedAt                 // Last update
+model Country {
+  id      String  @id @default(uuid()) // Primary Key
+  code    String  @unique // ISO Alpha-3 code, e.g. IND, AUS
+  name    String
+  flagUrl String?
 
-  playerTeams             PlayerTeam[]             // History of players in team
-  seriesFormatTeams       SeriesFormatTeam[]       // Series format entries
-  seriesFormatTeamPlayers SeriesFormatTeamPlayer[] // Selected players in formats
+  // Relations
+  teams       Team[] // One country can have many teams
+  players     Player[] // One country can have many players
+  seriesHosts SeriesHostCountry[] // One country can host many series
+}
+
+model Team {
+  id        String   @id @default(uuid()) // Primary Key
+  name      String
+  type      TeamType // INTERNATIONAL, DOMESTIC, LEAGUE
+  logoUrl   String?
+  countryId String? // Nullable, required only if type=INTERNATIONAL
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  country     Country?           @relation(fields: [countryId], references: [id])
+  playerTeams PlayerTeam[] // Players assigned to this team historically
+  seriesTeams SeriesTeam[] // This team participates in many series
+  formatTeams SeriesFormatTeam[] // Teams participating in series formats
 }
 
 model Player {
-  id           String      @id @default(uuid())    // Unique player ID
-  fullName     String                               // Full name
-  dob          DateTime                             // Date of birth
-  country      CountryCode                          // National origin
-  battingStyle String                               // e.g., Right-hand bat
-  bowlingStyle String                               // e.g., Right-arm fast
-  role         PlayerRole                           // Core skill/role
-  active       Boolean                              // Whether still playing
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  id           String     @id @default(uuid()) // Primary Key
+  fullName     String
+  dob          DateTime
+  countryId    String // Always required, player's nationality
+  battingStyle String?
+  bowlingStyle String?
+  role         PlayerRole // BATSMAN, BOWLER, etc.
+  active       Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 
-  playerTeams             PlayerTeam[]
-  seriesFormatTeamPlayers SeriesFormatTeamPlayer[]
+  // Relations
+  country           Country                  @relation(fields: [countryId], references: [id])
+  playerTeams       PlayerTeam[] // Teams player has been part of
+  formatTeamPlayers SeriesFormatTeamPlayer[] // Player's participation in series formats and teams
 }
 
 model PlayerTeam {
-  id        String   @id @default(uuid())          // ID
-  playerId  String                                 // FK to Player
-  teamId    String                                 // FK to Team
-  startDate DateTime                               // Joined date
-  endDate   DateTime?                              // Optional leave date
-  createdAt DateTime @default(now())
+  id        String    @id @default(uuid()) // Primary Key
+  playerId  String
+  teamId    String
+  startDate DateTime
+  endDate   DateTime?
+  createdAt DateTime  @default(now())
 
+  // Relations
   player Player @relation(fields: [playerId], references: [id])
   team   Team   @relation(fields: [teamId], references: [id])
 
-  @@index([playerId, endDate])                     // Fast query for current teams
+  @@index([playerId])
+  @@index([teamId])
 }
 
 model Series {
-  id          String              @id @default(uuid()) // Series ID
-  name        String                                    // Series name
-  description String?                                   // Optional description
-  type        SeriesType                                // Series type (e.g. Bilateral)
-  startDate   DateTime                                  // Series start
-  endDate     DateTime                                  // Series end
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  id          String     @id @default(uuid()) // Primary Key
+  name        String
+  description String?
+  type        SeriesType // BILATERAL, LEAGUE, etc.
+  startDate   DateTime
+  endDate     DateTime
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
-  seriesFormats   SeriesFormat[]
-  hostCountries   SeriesHostCountry[]
-
-  @@index([startDate, endDate])                         // For filtering by schedule
+  // Relations
+  hosts       SeriesHostCountry[] // Series hosted in multiple countries
+  seriesTeams SeriesTeam[] // Teams participating in this series
+  formats     SeriesFormat[] // Match formats included in series (optional)
 }
 
 model SeriesHostCountry {
-  id        String       @id @default(uuid())       // ID
-  seriesId  String                                   // FK to Series
-  country   CountryCode                              // Hosting country code
+  id        String @id @default(uuid()) // Primary Key
+  seriesId  String
+  countryId String
 
-  series Series @relation(fields: [seriesId], references: [id])
+  // Relations
+  series  Series  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  country Country @relation(fields: [countryId], references: [id])
+
+  @@unique([seriesId, countryId]) // Prevent duplicate host assignment
+}
+
+model SeriesTeam {
+  id       String @id @default(uuid()) // Primary Key
+  seriesId String
+  teamId   String
+
+  // Relations
+  series Series @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  team   Team   @relation(fields: [teamId], references: [id])
+
+  @@unique([seriesId, teamId]) // One team per series only once
 }
 
 model SeriesFormat {
-  id         String     @id @default(uuid())        // Format ID
-  seriesId   String                                  // FK to Series
-  format     MatchFormat                             // Test / ODI / T20
-  matchCount Int                                     // Matches in this format
+  id         String      @id @default(uuid()) // Primary Key
+  seriesId   String
+  format     MatchFormat // TEST, ODI, T20
+  matchCount Int
 
-  series                   Series                   @relation(fields: [seriesId], references: [id])
-  seriesFormatTeams        SeriesFormatTeam[]
-  seriesFormatTeamPlayers  SeriesFormatTeamPlayer[]
+  // Relations
+  series      Series             @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  formatTeams SeriesFormatTeam[] // Teams playing in this format of the series
+
+  @@unique([seriesId, format]) // Prevent duplicate format entries per series
 }
 
 model SeriesFormatTeam {
-  id              String        @id @default(uuid()) // Team entry ID
-  seriesFormatId  String                                 // FK to SeriesFormat
-  teamId          String                                 // FK to Team
+  id             String   @id @default(uuid()) // Primary Key
+  seriesFormatId String
+  teamId         String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  seriesFormat SeriesFormat @relation(fields: [seriesFormatId], references: [id])
-  team         Team         @relation(fields: [teamId], references: [id])
+  // Relations
+  seriesFormat      SeriesFormat             @relation(fields: [seriesFormatId], references: [id], onDelete: Cascade)
+  team              Team                     @relation(fields: [teamId], references: [id])
+  formatTeamPlayers SeriesFormatTeamPlayer[] @relation("TeamPlayers")
+
+  @@unique([seriesFormatId, teamId])
 }
 
-// Players selected for a particular team in a specific series format
 model SeriesFormatTeamPlayer {
-  id              String   @id @default(uuid())     // Selection ID
-  seriesFormatId  String                             // FK to SeriesFormat
-  teamId          String                             // FK to Team
-  playerId        String                             // FK to Player
+  id                 String   @id @default(uuid()) // Primary Key
+  seriesFormatTeamId String // Foreign key referencing SeriesFormatTeam
+  playerId           String
+  isCaptain          Boolean  @default(false)
+  isWicketkeeper     Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  isCaptain       Boolean  @default(false)           // True if captain
-  isWicketkeeper  Boolean  @default(false)           // True if keeping wickets
+  // Relations
+  seriesFormatTeam SeriesFormatTeam @relation(fields: [seriesFormatTeamId], references: [id], name: "TeamPlayers", onDelete: Cascade)
+  player           Player           @relation(fields: [playerId], references: [id])
 
-  createdAt       DateTime @default(now())
-
-  seriesFormat SeriesFormat @relation(fields: [seriesFormatId], references: [id])
-  team         Team         @relation(fields: [teamId], references: [id])
-  player       Player       @relation(fields: [playerId], references: [id])
+  @@unique([seriesFormatTeamId, playerId]) // Prevent duplicate player entries per team+format
 }
