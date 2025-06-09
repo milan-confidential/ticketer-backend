@@ -1,4 +1,4 @@
-import {PrismaClient, CountryCode, TeamType } from "@prisma/client";
+import {PrismaClient, TeamType } from "@prisma/client";
 import {handlePrismaError} from "../../../utils/prismaErrorHandler";
 import {AppError} from "../../../utils/AppError";
 
