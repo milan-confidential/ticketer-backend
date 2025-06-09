@@ -31,7 +31,9 @@ const options: swaggerJSDoc.Options = {
             },
         ],
     },
-    apis: [path.join(__dirname, './*.ts')],
+    apis: [
+        path.join(__dirname, './*.yaml'),
+    ],
 };
 
 const swaggerSpec = swaggerJSDoc(options);
