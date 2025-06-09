@@ -9,7 +9,7 @@ tags:
     description: Series management APIs
 
 paths:
-  /series:
+  /cricket/series:
     get:
       summary: Get all series
       tags:
@@ -41,7 +41,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Series'
 
-  /series/{seriesId}:
+  /cricket/series/{seriesId}:
     get:
       summary: Get a series by ID
       tags:
@@ -102,7 +102,7 @@ paths:
         '204':
           description: Series deleted
 
-  /series/{seriesId}/hosts:
+  /cricket/series/{seriesId}/hosts:
     put:
       summary: Update host countries for a series
       tags:
@@ -123,7 +123,7 @@ paths:
         '200':
           description: Hosts updated
 
-  /series/{seriesId}/teams:
+  /cricket/series/{seriesId}/teams:
     put:
       summary: Update teams for a series
       tags:
@@ -144,7 +144,7 @@ paths:
         '200':
           description: Teams updated
 
-  /series/{seriesId}/formats:
+  /cricket/series/{seriesId}/formats:
     put:
       summary: Update formats for a series
       tags:

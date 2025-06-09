@@ -5,7 +5,7 @@ info:
   description: API documentation for managing players
 
 paths:
-  /players:
+  /cricket/players:
     get:
       summary: Get all players
       tags:
@@ -37,7 +37,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Player'
 
-  /players/{playerId}:
+  /cricket/players/{playerId}:
     get:
       summary: Get player by ID
       tags:
@@ -96,7 +96,7 @@ paths:
         '204':
           description: Player deleted successfully
 
-  /players/team/{teamId}:
+  /cricket/players/team/{teamId}:
     get:
       summary: Get players by team ID
       tags:

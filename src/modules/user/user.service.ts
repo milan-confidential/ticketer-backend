@@ -13,11 +13,7 @@ interface User {
 
 export const getUsers = async () => {
     try {
-        return await prisma.user.findMany({
-            include: {
-                passwords: true,  // This fetches the related passwords for each user
-            },
-        });
+        return await prisma.user.findMany();
     } catch (error) {
         throw handlePrismaError(error);
     }
