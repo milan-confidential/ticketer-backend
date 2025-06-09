@@ -1,0 +1,151 @@
+openapi: 3.0.0
+info:
+  title: Team API
+  version: 1.0.0
+  description: API documentation for managing teams
+
+paths:
+  /teams:
+    get:
+      summary: Get all teams
+      tags:
+        - Teams
+      responses:
+        '200':
+          description: List of all teams
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Team'
+    post:
+      summary: Create a new team
+      tags:
+        - Teams
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTeam'
+      responses:
+        '201':
+          description: Team created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+
+  /teams/{teamId}:
+    get:
+      summary: Get team by ID
+      tags:
+        - Teams
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Team details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+        '404':
+          description: Team not found
+
+    put:
+      summary: Update team
+      tags:
+        - Teams
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTeam'
+      responses:
+        '200':
+          description: Team updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+
+    delete:
+      summary: Delete team
+      tags:
+        - Teams
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Team deleted successfully
+
+components:
+  schemas:
+    Team:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+          enum: [ INTERNATIONAL, DOMESTIC, LEAGUE ]
+        logoUrl:
+          type: string
+          nullable: true
+        countryId:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [ name, type ]
+
+    CreateTeam:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [ INTERNATIONAL, DOMESTIC, LEAGUE ]
+        logoUrl:
+          type: string
+        countryId:
+          type: string
+      required: [ name, type ]
+
+    UpdateTeam:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+          enum: [ INTERNATIONAL, DOMESTIC, LEAGUE ]
+        logoUrl:
+          type: string
+        countryId:
+          type: string

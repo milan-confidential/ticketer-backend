@@ -96,6 +96,30 @@ paths:
         '204':
           description: Player deleted successfully
 
+  /players/team/{teamId}:
+    get:
+      summary: Get players by team ID
+      tags:
+        - Players
+      parameters:
+        - name: teamId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of players in the specified team
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Player'
+        '404':
+          description: Team not found or no players available
+
 components:
   schemas:
     Player:
