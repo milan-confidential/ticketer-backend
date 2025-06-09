@@ -21,13 +21,13 @@ export const getSeriesById = async (
     next: NextFunction
 ) => {
     try {
-        const { id } = req.params;
+        const { seriesId } = req.params;
 
-        if (!id) {
+        if (!seriesId) {
             throw new AppError('Series ID is required', 400);
         }
 
-        const series = await seriesService.getById(id);
+        const series = await seriesService.getById(seriesId);
         res.json(series);
     } catch (error) {
         next(error);
@@ -54,14 +54,14 @@ export const updateSeries = async (
     next: NextFunction
 ) => {
     try {
-        const { id } = req.params;
+        const { seriesId } = req.params;
         const seriesData = req.body;
 
-        if (!id) {
+        if (!seriesId) {
             throw new AppError('Series ID is required', 400);
         }
 
-        const updatedSeries = await seriesService.updateSeries(id, seriesData);
+        const updatedSeries = await seriesService.updateSeries(seriesId, seriesData);
         res.json(updatedSeries);
     } catch (error) {
         next(error);
@@ -74,13 +74,13 @@ export const deleteSeries = async (
     next: NextFunction
 ) => {
     try {
-        const { id } = req.params;
+        const { seriesId } = req.params;
 
-        if (!id) {
+        if (!seriesId) {
             throw new AppError('Series ID is required', 400);
         }
 
-        await seriesService.deleteSeries(id);
+        await seriesService.deleteSeries(seriesId);
         res.status(204).send();
     } catch (error) {
         next(error);
@@ -93,14 +93,14 @@ export const updateSeriesHosts = async (
     next: NextFunction
 ) => {
     try {
-        const { id } = req.params;
-        const { hosts } = req.body;
+        const { seriesId } = req.params;
+        const { hostCountryIds } = req.body;
 
-        if (!id) {
+        if (!seriesId) {
             throw new AppError('Series ID is required', 400);
         }
 
-        const updatedSeries = await seriesService.updateSeriesHosts(id, hosts);
+        const updatedSeries = await seriesService.updateSeriesHosts(seriesId, hostCountryIds);
         res.json(updatedSeries);
     } catch (error) {
         next(error);
@@ -113,14 +113,14 @@ export const updateSeriesTeams = async (
     next: NextFunction
 ) => {
     try {
-        const { id } = req.params;
-        const { teams } = req.body;
+        const { seriesId } = req.params;
+        const { teamIds } = req.body;
 
-        if (!id) {
+        if (!seriesId) {
             throw new AppError('Series ID is required', 400);
         }
 
-        const updatedSeries = await seriesService.updateSeriesTeams(id, teams);
+        const updatedSeries = await seriesService.updateSeriesTeams(seriesId, teamIds);
         res.json(updatedSeries);
     } catch (error) {
         next(error);
@@ -133,14 +133,14 @@ export const updateSeriesFormats = async (
     next: NextFunction
 ) => {
     try {
-        const { id } = req.params;
+        const { seriesId } = req.params;
         const { formats } = req.body;
 
-        if (!id) {
+        if (!seriesId) {
             throw new AppError('Series ID is required', 400);
         }
 
-        const updatedSeries = await seriesService.updateSeriesFormats(id, formats);
+        const updatedSeries = await seriesService.updateSeriesFormats(seriesId, formats);
         res.json(updatedSeries);
     } catch (error) {
         next(error);

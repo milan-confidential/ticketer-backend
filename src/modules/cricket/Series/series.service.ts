@@ -12,11 +12,11 @@ export const getAll = async () => {
     }
 };
 
-export const getById = async (id: string) => {
+export const getById = async (seriesId: string) => {
     try {
 
         const series = await prisma.series.findUnique({
-            where: { id },
+            where: { id: seriesId },
             include: {
                 hosts: { include: { country: true } },
                 seriesTeams: { include: { team: true } },
@@ -119,16 +119,16 @@ export const createSeries = async (data: any) => {
     });
 };
 
-export const updateSeries = async (id: string, data: any) => {
+export const updateSeries = async (seriesId: string, data: any) => {
     try {
         // Validate required fields
-        if (!id) {
+        if (!seriesId) {
             throw new AppError("Series ID is required", 400);
         }
 
         // Update the series
         return await prisma.series.update({
-            where: { id },
+            where: { id: seriesId },
             data: data
         });
     } catch (error) {
@@ -136,36 +136,36 @@ export const updateSeries = async (id: string, data: any) => {
     }
 };
 
-export const deleteSeries = async (id: string) => {
+export const deleteSeries = async (seriesId: string) => {
     try {
         // Validate required fields
-        if (!id) {
+        if (!seriesId) {
             throw new AppError("Series ID is required", 400);
         }
 
         // Delete the series
         return await prisma.series.delete({
-            where: { id },
+            where: { id: seriesId },
         });
     } catch (error) {
         throw handlePrismaError(error);
     }
 };
 
-export const updateSeriesHosts = async (id: string, hosts: string[]) => {
+export const updateSeriesHosts = async (seriesId: string, hostCountryIds: string[]) => {
     try {
         // Validate required fields
-        if (!id) {
+        if (!seriesId) {
             throw new AppError("Series ID is required", 400);
         }
 
         await prisma.seriesHostCountry.deleteMany({
-            where: { seriesId: id },
+            where: { seriesId },
         });
 
         return await prisma.seriesHostCountry.createMany({
-            data: hosts.map((countryId) => ({
-                seriesId: id,
+            data: hostCountryIds.map((countryId) => ({
+                seriesId,
                 countryId,
             })),
         })
@@ -174,20 +174,20 @@ export const updateSeriesHosts = async (id: string, hosts: string[]) => {
     }
 };
 
-export const updateSeriesTeams = async (id: string, teams: string[]) => {
+export const updateSeriesTeams = async (seriesId: string, teamIds: string[]) => {
     try {
         // Validate required fields
-        if (!id) {
+        if (!seriesId) {
             throw new AppError("Series ID is required", 400);
         }
 
         await prisma.seriesTeam.deleteMany({
-            where: { seriesId: id },
+            where: { seriesId },
         });
 
         return await prisma.seriesTeam.createMany({
-            data: teams.map((teamId) => ({
-                seriesId: id,
+            data: teamIds.map((teamId) => ({
+                seriesId,
                 teamId,
             })),
         });
@@ -196,20 +196,20 @@ export const updateSeriesTeams = async (id: string, teams: string[]) => {
     }
 };
 
-export const updateSeriesFormats = async (id: string, formats: any[]) => {
+export const updateSeriesFormats = async (seriesId: string, formats: any[]) => {
     try {
         // Validate required fields
-        if (!id) {
+        if (!seriesId) {
             throw new AppError("Series ID is required", 400);
         }
 
         await prisma.seriesFormat.deleteMany({
-            where: { seriesId: id },
+            where: { seriesId },
         });
 
         return await prisma.seriesFormat.createMany({
             data: formats.map((format) => ({
-                seriesId: id,
+                seriesId,
                 format: format.format,
                 matchCount: format.matchCount,
             })),

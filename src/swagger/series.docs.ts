@@ -2,7 +2,7 @@
  * @swagger
  * tags:
  *   - name: Series
- *     description: Series management
+ *     description: Series management APIs
  *
  * components:
  *   schemas:
@@ -17,6 +17,7 @@
  *           type: string
  *         type:
  *           type: string
+ *           enum: [BILATERAL, TRIANGULAR, QUADRANGULAR, LEAGUE]
  *         startDate:
  *           type: string
  *           format: date-time
@@ -44,6 +45,7 @@
  *           type: string
  *         type:
  *           type: string
+ *           enum: [BILATERAL, TRIANGULAR, QUADRANGULAR, LEAGUE]
  *         startDate:
  *           type: string
  *           format: date-time
@@ -65,12 +67,62 @@
  *             properties:
  *               format:
  *                 type: string
+ *                 enum: [TEST, ODI, T20]
  *               matchCount:
  *                 type: integer
  *
  *     UpdateSeriesInput:
- *       allOf:
- *         - $ref: '#/components/schemas/CreateSeriesInput'
+ *       type: object
+ *       properties:
+ *         name:
+ *           type: string
+ *         description:
+ *           type: string
+ *         type:
+ *           type: string
+ *           enum: [BILATERAL, TRIANGULAR, QUADRANGULAR, LEAGUE]
+ *         startDate:
+ *           type: string
+ *           format: date-time
+ *         endDate:
+ *           type: string
+ *           format: date-time
+ *
+ *     UpdateHostsInput:
+ *       type: object
+ *       required:
+ *         - hostCountryIds
+ *       properties:
+ *         hostCountryIds:
+ *           type: array
+ *           items:
+ *             type: string
+ *
+ *     UpdateTeamsInput:
+ *       type: object
+ *       required:
+ *         - teamIds
+ *       properties:
+ *         teamIds:
+ *           type: array
+ *           items:
+ *             type: string
+ *
+ *     UpdateFormatsInput:
+ *       type: object
+ *       required:
+ *         - formats
+ *       properties:
+ *         formats:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               format:
+ *                 type: string
+ *                 enum: [TEST, ODI, T20]
+ *               matchCount:
+ *                 type: integer
  *
  * /series:
  *   get:
@@ -78,14 +130,13 @@
  *     tags: [Series]
  *     responses:
  *       200:
- *         description: List of all series
+ *         description: List of series
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Series'
- *
  *   post:
  *     summary: Create a new series
  *     tags: [Series]
@@ -103,33 +154,31 @@
  *             schema:
  *               $ref: '#/components/schemas/Series'
  *
- * /series/{id}:
+ * /series/{seriesId}:
  *   get:
  *     summary: Get a series by ID
  *     tags: [Series]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: seriesId
  *         schema:
  *           type: string
  *         required: true
- *         description: Series ID
  *     responses:
  *       200:
- *         description: Series found
+ *         description: Series details
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Series'
  *       404:
  *         description: Series not found
- *
  *   put:
- *     summary: Update a series
+ *     summary: Update a series by ID
  *     tags: [Series]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: seriesId
  *         schema:
  *           type: string
  *         required: true
@@ -146,29 +195,30 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Series'
- *
+ *       400:
+ *         description: Invalid series ID
+ *       404:
+ *         description: Series not found
  *   delete:
- *     summary: Delete a series by ID
+ *     summary: Delete a series
  *     tags: [Series]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: seriesId
  *         required: true
  *         schema:
  *           type: string
  *     responses:
  *       204:
- *         description: Deleted successfully
- *       400:
- *         description: Foreign key constraint error
+ *         description: Series deleted
  *
- * /series/{id}/hosts:
+ * /series/{seriesId}/hosts:
  *   put:
  *     summary: Update host countries for a series
  *     tags: [Series]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: seriesId
  *         schema:
  *           type: string
  *         required: true
@@ -177,23 +227,18 @@
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               hostCountryIds:
- *                 type: array
- *                 items:
- *                   type: string
+ *             $ref: '#/components/schemas/UpdateHostsInput'
  *     responses:
  *       200:
- *         description: Host countries updated
+ *         description: Hosts updated
  *
- * /series/{id}/teams:
+ * /series/{seriesId}/teams:
  *   put:
  *     summary: Update teams for a series
  *     tags: [Series]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: seriesId
  *         schema:
  *           type: string
  *         required: true
@@ -202,23 +247,18 @@
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               teamIds:
- *                 type: array
- *                 items:
- *                   type: string
+ *             $ref: '#/components/schemas/UpdateTeamsInput'
  *     responses:
  *       200:
- *         description: Series teams updated
+ *         description: Teams updated
  *
- * /series/{id}/formats:
+ * /series/{seriesId}/formats:
  *   put:
  *     summary: Update formats for a series
  *     tags: [Series]
  *     parameters:
  *       - in: path
- *         name: id
+ *         name: seriesId
  *         schema:
  *           type: string
  *         required: true
@@ -227,18 +267,8 @@
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               formats:
- *                 type: array
- *                 items:
- *                   type: object
- *                   properties:
- *                     format:
- *                       type: string
- *                     matchCount:
- *                       type: integer
+ *             $ref: '#/components/schemas/UpdateFormatsInput'
  *     responses:
  *       200:
- *         description: Series formats updated
+ *         description: Formats updated
  */
