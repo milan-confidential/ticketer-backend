@@ -4,9 +4,9 @@ import * as controller from './team.controller';
 const router = Router();
 
 router.get('/', controller.getTeams);
-router.get('/:id', controller.getTeamById);
+router.get('/:teamId', controller.getTeamById);
 router.post('/', controller.createTeam);
-router.put('/:id', controller.updateTeam);
-router.delete('/:id', controller.deleteTeam);
+router.put('/:teamId', controller.updateTeam);
+router.delete('/:teamId', controller.deleteTeam);
 
 export default router;

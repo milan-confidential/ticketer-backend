@@ -32,6 +32,7 @@ const options: swaggerJSDoc.Options = {
         ],
     },
     apis: [
+        path.join(__dirname, './*.ts'),
         path.join(__dirname, './*.yaml'),
     ],
 };

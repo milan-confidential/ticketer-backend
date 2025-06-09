@@ -22,8 +22,8 @@ export const getTeamById = async (
 ) => {
 
     try {
-        const { id } = req.params;
-        const team = await teamService.getById(id);
+        const { teamId } = req.params;
+        const team = await teamService.getById(teamId);
 
         if (!team) {
             throw new AppError('Team not found', 404);
@@ -59,13 +59,13 @@ export const updateTeam = async (
     next: NextFunction
 ) => {
     try {
-        const { id } = req.params;
+        const { teamId } = req.params;
 
-        if (!id) {
+        if (!teamId) {
             throw new AppError('Team ID is required', 400);
         }
 
-        const updatedTeam = await teamService.updateTeam(id, req.body);
+        const updatedTeam = await teamService.updateTeam(teamId, req.body);
         res.json(updatedTeam);
     } catch (error) {
         next(error);
@@ -78,13 +78,13 @@ export const deleteTeam = async (
     next: NextFunction
 ) => {
     try {
-        const { id } = req.params;
+        const { teamId } = req.params;
 
-        if (!id) {
+        if (!teamId) {
             throw new AppError('Team ID is required', 400);
         }
 
-        await teamService.deleteTeam(id);
+        await teamService.deleteTeam(teamId);
         res.status(204).send();
     } catch (error) {
         next(error);

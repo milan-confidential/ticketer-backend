@@ -22,8 +22,8 @@ export const getPlayerById = async (
     next: NextFunction
 ) => {
     try {
-        const { id } = req.params;
-        const player = await playerService.getById(id);
+        const { playerId } = req.params;
+        const player = await playerService.getById(playerId);
         if (!player) {
             throw new AppError('Player not found', 404);
         }
@@ -53,14 +53,14 @@ export const updatePlayer = async (
     next: NextFunction
 ) => {
     try {
-        const { id } = req.params;
+        const { playerId } = req.params;
         const playerData = req.body;
 
-        if (!id) {
+        if (!playerId) {
             throw new AppError('Player ID is required for update', 400);
         }
 
-        const updatedPlayer = await playerService.updatePlayer(id, playerData);
+        const updatedPlayer = await playerService.updatePlayer(playerId, playerData);
         res.json(updatedPlayer);
     } catch (error) {
         next(error);
@@ -73,11 +73,11 @@ export const deletePlayer = async (
     next: NextFunction
 ) => {
     try {
-        const { id } = req.params;
-        if (!id) {
+        const { playerId } = req.params;
+        if (!playerId) {
             throw new AppError('Player ID is required for deletion', 400);
         }
-        await playerService.deletePlayer(id);
+        await playerService.deletePlayer(playerId);
         res.status(204).send();
     } catch (error) {
         next(error);

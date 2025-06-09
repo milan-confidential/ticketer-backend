@@ -6,10 +6,8 @@ const prisma = new PrismaClient();
 
 interface Team {
     name: string;
-    country: CountryCode;
     type: TeamType;
 }
-
 
 export const getAll = async () => {
     try {
@@ -19,10 +17,10 @@ export const getAll = async () => {
     }
 }
 
-export const getById = async (id: string) => {
+export const getById = async (teamId: string) => {
     try {
         return await prisma.team.findUnique({
-            where: { id },
+            where: { id: teamId },
         })
     } catch (error) {
         throw handlePrismaError(error);
@@ -39,19 +37,19 @@ export const createTeam = async (teamData: Team) => {
     }
 }
 
-export const updateTeam = async (id: string, teamData: Team) => {
+export const updateTeam = async (teamId: string, teamData: Team) => {
     try {
 
         // Validate that the team exists before updating
         const existingTeam = await prisma.team.findUnique({
-            where: { id },
+            where: { id: teamId },
         });
         if (!existingTeam) {
             throw new AppError('Team not found', 404);
         }
 
         return await prisma.team.update({
-            where: { id },
+            where: { id: teamId },
             data: teamData
         });
     } catch (error) {
@@ -59,18 +57,18 @@ export const updateTeam = async (id: string, teamData: Team) => {
     }
 }
 
-export const deleteTeam = async (id: string) => {
+export const deleteTeam = async (teamId: string) => {
     try {
         // Validate that the team exists before deleting
         const existingTeam = await prisma.team.findUnique({
-            where: { id },
+            where: { id: teamId },
         });
         if (!existingTeam) {
             throw new AppError('Team not found', 404);
         }
 
         return await prisma.team.delete({
-            where: { id },
+            where: { id: teamId },
         });
     } catch (error) {
         throw handlePrismaError(error);
