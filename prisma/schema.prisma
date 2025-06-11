@@ -97,9 +97,30 @@ enum PlayerRole {
   WICKET_KEEPER
 }
 
-/// =========================
-/// 📁 Main Domain Models
-/// =========================
+enum MatchStatus {
+  SCHEDULED
+  LIVE
+  COMPLETED
+  CANCELLED
+  ABANDONED
+}
+
+enum TossDecision {
+  BAT
+  BOWL
+}
+
+enum ResultType {
+  WIN
+  LOSS
+  DRAW
+  TIE
+  NO_RESULT
+}
+
+// =========================
+// 📁 Main Domain Models
+// =========================
 
 model Country {
   id      String  @id @default(uuid()) // Primary Key
@@ -111,6 +132,7 @@ model Country {
   teams       Team[] // One country can have many teams
   players     Player[] // One country can have many players
   seriesHosts SeriesHostCountry[] // One country can host many series
+  venues      Venue[]
 }
 
 model Team {
@@ -123,10 +145,19 @@ model Team {
   updatedAt DateTime @updatedAt
 
   // Relations
-  country     Country?           @relation(fields: [countryId], references: [id])
-  playerTeams PlayerTeam[] // Players assigned to this team historically
-  seriesTeams SeriesTeam[] // This team participates in many series
-  formatTeams SeriesFormatTeam[] // Teams participating in series formats
+  country        Country?           @relation(fields: [countryId], references: [id])
+  playerTeams    PlayerTeam[] // Players assigned to this team historically
+  seriesTeams    SeriesTeam[] // This team participates in many series
+  formatTeams    SeriesFormatTeam[] // Teams participating in series formats
+  matchesAsTeam1 Match[]            @relation("MatchTeam1")
+  matchesAsTeam2 Match[]            @relation("MatchTeam2")
+  tossWins       Toss[]             @relation("TossWinningTeam")
+  matchSquads    MatchSquad[]
+  inningsBatting Innings[]          @relation("InningsBatting")
+  inningsBowling Innings[]          @relation("InningsBowling")
+  matchResults   MatchResult[]      @relation("WinningTeam")
+
+  @@index([countryId])
 }
 
 model Player {
@@ -145,6 +176,12 @@ model Player {
   country           Country                  @relation(fields: [countryId], references: [id])
   playerTeams       PlayerTeam[] // Teams player has been part of
   formatTeamPlayers SeriesFormatTeamPlayer[] // Player's participation in series formats and teams
+  matchSquads       MatchSquad[]
+  battingScorecards BattingScorecard[]       @relation("BattingScorecardPlayer")
+  bowlingScorecards BowlingScorecard[]
+  matchResults      MatchResult[]            @relation("PlayerOfMatch")
+  dismissedBatting  BattingScorecard[]       @relation("DismissalBowler")
+  dismissedFielding BattingScorecard[]       @relation("DismissalFielder")
 }
 
 model PlayerTeam {
@@ -174,9 +211,12 @@ model Series {
   updatedAt   DateTime   @updatedAt
 
   // Relations
-  hosts       SeriesHostCountry[] // Series hosted in multiple countries
-  seriesTeams SeriesTeam[] // Teams participating in this series
-  formats     SeriesFormat[] // Match formats included in series (optional)
+  hosts            SeriesHostCountry[] // Series hosted in multiple countries
+  seriesTeams      SeriesTeam[] // Teams participating in this series
+  formats          SeriesFormat[] // Match formats included in series (optional)
+  matches          Match[]
+  battingScorecard BattingScorecard[]
+  bowlingScorecard BowlingScorecard[]
 }
 
 model SeriesHostCountry {
@@ -204,7 +244,7 @@ model SeriesTeam {
 }
 
 model SeriesFormat {
-  id         String      @id @default(uuid()) // Primary Key
+  id         String      @id @default(uuid())
   seriesId   String
   format     MatchFormat // TEST, ODI, T20
   matchCount Int
@@ -212,12 +252,13 @@ model SeriesFormat {
   // Relations
   series      Series             @relation(fields: [seriesId], references: [id], onDelete: Cascade)
   formatTeams SeriesFormatTeam[] // Teams playing in this format of the series
+  matches     Match[]
 
   @@unique([seriesId, format]) // Prevent duplicate format entries per series
 }
 
 model SeriesFormatTeam {
-  id             String   @id @default(uuid()) // Primary Key
+  id             String   @id @default(uuid())
   seriesFormatId String
   teamId         String
   createdAt      DateTime @default(now())
@@ -226,13 +267,13 @@ model SeriesFormatTeam {
   // Relations
   seriesFormat      SeriesFormat             @relation(fields: [seriesFormatId], references: [id], onDelete: Cascade)
   team              Team                     @relation(fields: [teamId], references: [id])
-  formatTeamPlayers SeriesFormatTeamPlayer[] @relation("TeamPlayers")
+  formatTeamPlayers SeriesFormatTeamPlayer[]
 
   @@unique([seriesFormatId, teamId])
 }
 
 model SeriesFormatTeamPlayer {
-  id                 String   @id @default(uuid()) // Primary Key
+  id                 String   @id @default(uuid())
   seriesFormatTeamId String // Foreign key referencing SeriesFormatTeam
   playerId           String
   isCaptain          Boolean  @default(false)
@@ -241,8 +282,220 @@ model SeriesFormatTeamPlayer {
   updatedAt          DateTime @updatedAt
 
   // Relations
-  seriesFormatTeam SeriesFormatTeam @relation(fields: [seriesFormatTeamId], references: [id], name: "TeamPlayers", onDelete: Cascade)
+  seriesFormatTeam SeriesFormatTeam @relation(fields: [seriesFormatTeamId], references: [id], onDelete: Cascade)
   player           Player           @relation(fields: [playerId], references: [id])
 
   @@unique([seriesFormatTeamId, playerId]) // Prevent duplicate player entries per team+format
+}
+
+// ===========================
+// 📍 Venue
+// ===========================
+
+model Venue {
+  id        String   @id @default(uuid())
+  name      String
+  city      String
+  countryId String
+  capacity  Int?
+  pitchType String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  country Country @relation(fields: [countryId], references: [id])
+  matches Match[]
+
+  @@index([countryId])
+}
+
+// ===========================
+// 📍 Match: Each game instance
+// ===========================
+
+model Match {
+  id             String      @id @default(uuid())
+  seriesId       String
+  seriesFormatId String
+  venueId        String
+  team1Id        String
+  team2Id        String
+  matchDate      DateTime
+  format         MatchFormat
+  status         MatchStatus @default(SCHEDULED)
+  matchSummary   String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  // Relations
+  series            Series             @relation(fields: [seriesId], references: [id])
+  seriesFormat      SeriesFormat       @relation(fields: [seriesFormatId], references: [id])
+  venue             Venue              @relation(fields: [venueId], references: [id])
+  team1             Team               @relation("MatchTeam1", fields: [team1Id], references: [id])
+  team2             Team               @relation("MatchTeam2", fields: [team2Id], references: [id])
+  toss              Toss?
+  squads            MatchSquad[]
+  innings           Innings[]
+  battingScorecards BattingScorecard[]
+  bowlingScorecards BowlingScorecard[]
+  matchResult       MatchResult?
+
+  @@index([seriesId, matchDate])
+  @@index([venueId, matchDate])
+  @@index([team1Id, matchDate])
+  @@index([team2Id, matchDate])
+}
+
+// ===========================
+// 📍 Toss: Who won and their decision
+// ===========================
+
+model Toss {
+  id            String @id @default(uuid())
+  matchId       String @unique
+  winningTeamId String
+
+  decision  TossDecision
+  createdAt DateTime     @default(now())
+
+  // Relations
+  match       Match @relation(fields: [matchId], references: [id])
+  winningTeam Team  @relation("TossWinningTeam", fields: [winningTeamId], references: [id])
+}
+
+// ===========================
+// 📍 MatchSquad: Playing XI for each match
+// ===========================
+
+model MatchSquad {
+  id             String   @id @default(uuid())
+  matchId        String
+  teamId         String
+  playerId       String
+  isCaptain      Boolean  @default(false)
+  isWicketkeeper Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  match  Match  @relation(fields: [matchId], references: [id])
+  team   Team   @relation(fields: [teamId], references: [id])
+  player Player @relation(fields: [playerId], references: [id])
+
+  @@unique([matchId, teamId, playerId])
+}
+
+// ===========================
+// 📍 Innings: Each team's batting innings
+// ===========================
+
+model Innings {
+  id              String   @id @default(uuid())
+  matchId         String
+  inningsOrder    Int
+  battingTeamId   String
+  bowlingTeamId   String
+  totalRuns       Int
+  wickets         Int
+  overs           Float
+  extrasByes      Int      @default(0)
+  extrasLegByes   Int      @default(0)
+  extrasWides     Int      @default(0)
+  extrasNoBalls   Int      @default(0)
+  extrasPenalty   Int      @default(0)
+  declared        Boolean  @default(false)
+  inningsDuration Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  match             Match              @relation(fields: [matchId], references: [id])
+  battingTeam       Team               @relation("InningsBatting", fields: [battingTeamId], references: [id])
+  bowlingTeam       Team               @relation("InningsBowling", fields: [bowlingTeamId], references: [id])
+  battingScorecards BattingScorecard[]
+  bowlingScorecards BowlingScorecard[]
+
+  @@unique([matchId, inningsOrder])
+}
+
+// ===========================
+// 📍 BattingScorecard: Player batting stats per innings
+// ===========================
+
+model BattingScorecard {
+  id                 String   @id @default(uuid())
+  matchId            String
+  seriesId           String
+  inningsId          String
+  playerId           String
+  battingPosition    Int?
+  runs               Int
+  ballsFaced         Int
+  fours              Int
+  sixes              Int
+  outType            String
+  dismissalBowlerId  String?
+  dismissalFielderId String?
+  dismissalOver      Float?
+  createdAt          DateTime @default(now())
+
+  // Relations
+  match            Match   @relation(fields: [matchId], references: [id])
+  series           Series  @relation(fields: [seriesId], references: [id])
+  innings          Innings @relation(fields: [inningsId], references: [id])
+  player           Player  @relation("BattingScorecardPlayer", fields: [playerId], references: [id])
+  dismissalBowler  Player? @relation("DismissalBowler", fields: [dismissalBowlerId], references: [id])
+  dismissalFielder Player? @relation("DismissalFielder", fields: [dismissalFielderId], references: [id])
+
+  @@unique([inningsId, playerId])
+  @@index([playerId])
+}
+
+// ===========================
+// 📍 BowlingScorecard: Player bowling stats per innings
+// ===========================
+
+model BowlingScorecard {
+  id           String   @id @default(uuid())
+  matchId      String
+  seriesId     String
+  inningsId    String
+  playerId     String
+  overs        Float
+  maidens      Int
+  runsConceded Int
+  wickets      Int
+  wides        Int
+  noballs      Int
+  createdAt    DateTime @default(now())
+
+  // Relations
+  match   Match   @relation(fields: [matchId], references: [id])
+  series  Series  @relation(fields: [seriesId], references: [id])
+  innings Innings @relation(fields: [inningsId], references: [id])
+  player  Player  @relation(fields: [playerId], references: [id])
+
+  @@unique([inningsId, playerId])
+  @@index([playerId])
+}
+
+// ===========================
+// 📍 MatchResult: Final result and awards
+// ===========================
+
+model MatchResult {
+  id              String     @id @default(uuid())
+  matchId         String     @unique
+  resultType      ResultType
+  winningTeamId   String?
+  margin          String
+  playerOfMatchId String?
+  matchHighlights String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  // Relations
+  match         Match   @relation(fields: [matchId], references: [id])
+  winningTeam   Team?   @relation("WinningTeam", fields: [winningTeamId], references: [id])
+  playerOfMatch Player? @relation("PlayerOfMatch", fields: [playerOfMatchId], references: [id])
 }

@@ -1,6 +1,3 @@
-// Use DBML to define your database structure
-// Docs: https://dbml.dbdiagram.io/docs
-
 Enum TeamType {
   INTERNATIONAL
   DOMESTIC
@@ -25,6 +22,27 @@ Enum MatchFormat {
   TEST
   ODI
   T20
+}
+
+Enum MatchStatus {
+  SCHEDULED
+  LIVE
+  COMPLETED
+  CANCELLED
+  ABANDONED
+}
+
+Enum TossDecision {
+  BAT
+  BOWL
+}
+
+Enum ResultType {
+  WIN
+  LOSS
+  DRAW
+  TIE
+  NO_RESULT
 }
 
 Table Country {
@@ -139,5 +157,137 @@ Table SeriesFormatTeamPlayer {
 
   indexes {
     (seriesFormatId, teamId, playerId) [unique]
+  }
+}
+
+Table Match {
+  id                uuid          [pk]
+  seriesId          uuid?         [ref: > Series.id]
+  seriesFormatId    uuid?         [ref: > SeriesFormat.id]
+  venueId           uuid          [ref: > Venue.id]
+  team1Id           uuid          [ref: > Team.id]
+  team2Id           uuid          [ref: > Team.id]
+  matchDate         datetime
+  format            MatchFormat
+  status            MatchStatus   [default: "SCHEDULED"]
+  matchSummary      text?         [note: "Optional summary or highlights"]
+  createdAt         datetime
+  updatedAt         datetime
+
+  Indexes {
+    (seriesId, matchDate)        [name: "series_matches"]
+    (venueId, matchDate)         [name: "venue_schedule"]
+    (team1Id, matchDate)         [name: "team1_schedule"]
+    (team2Id, matchDate)         [name: "team2_schedule"]
+  }
+}
+
+Table Toss {
+  id                uuid          [pk]
+  matchId           uuid          [ref: > Match.id]
+  winningTeamId     uuid          [ref: > Team.id]
+  decision          TossDecision
+  createdAt         datetime
+
+  Indexes {
+    (matchId)                     [unique]
+  }
+}
+
+Table Innings {
+  id                uuid          [pk]
+  matchId           uuid          [ref: > Match.id]
+  inningsOrder      int           [note: "1 = 1st Innings, 2 = 2nd Innings, etc."]
+  battingTeamId     uuid          [ref: > Team.id]
+  bowlingTeamId     uuid          [ref: > Team.id]
+  totalRuns         int
+  wickets           int
+  overs             float
+  extrasByes        int           [default: 0]
+  extrasLegByes     int           [default: 0]
+  extrasWides       int           [default: 0]
+  extrasNoBalls     int           [default: 0]
+  extrasPenalty     int           [default: 0]
+  declared          boolean       [default: false]
+  inningsDuration   int?          [note: "Duration in minutes"]
+  createdAt         datetime
+  updatedAt         datetime
+
+  Indexes {
+    (matchId, inningsOrder)      [unique, name: "match_innings"]
+  }
+}
+
+Table BattingScorecard {
+  id                   uuid          [pk]
+  matchId              uuid          [ref: > Match.id]
+  seriesId             uuid?         [ref: > Series.id]
+  inningsId            uuid          [ref: > Innings.id]
+  playerId             uuid          [ref: > Player.id]
+  battingPosition      int?          [note: "Batting order position"]
+  runs                 int
+  ballsFaced           int
+  fours                int
+  sixes                int
+  outType              varchar       [note: "BOWLED, CAUGHT, LBW, RUN_OUT, RETIRED_HURT, NOT_OUT"]
+  dismissalBowlerId    uuid?         [ref: > Player.id]
+  dismissalFielderId   uuid?         [ref: > Player.id]
+  dismissalOver        float?        [note: "Over at which dismissal occurred"]
+  createdAt            datetime
+
+  Indexes {
+    (inningsId, playerId)        [unique, name: "player_innings"]
+    (playerId)                   [name: "batting_player_index"]
+  }
+}
+
+Table BowlingScorecard {
+  id                   uuid          [pk]
+  matchId              uuid          [ref: > Match.id]
+  seriesId             uuid?         [ref: > Series.id]
+  inningsId            uuid          [ref: > Innings.id]
+  playerId             uuid          [ref: > Player.id]
+  overs                float
+  maidens              int
+  runsConceded         int
+  wickets              int
+  wides                int
+  noballs              int
+  createdAt            datetime
+
+  Indexes {
+    (inningsId, playerId)        [unique, name: "bowler_innings"]
+    (playerId)                   [name: "bowling_player_index"]
+  }
+}
+
+Table MatchResult {
+  id                   uuid          [pk]
+  matchId              uuid          [ref: > Match.id]
+  resultType           ResultType
+  winningTeamId        uuid?         [ref: > Team.id]
+  margin               varchar       [note: "e.g. 'by 5 wickets', 'by 45 runs'"]
+  playerOfMatchId      uuid?         [ref: > Player.id]
+  matchHighlights      text?
+  createdAt            datetime
+  updatedAt            datetime
+
+  Indexes {
+    (matchId)                     [unique]
+  }
+}
+
+Table MatchSquad {
+  id               uuid        [pk]
+  matchId          uuid        [ref: > Match.id]
+  teamId           uuid        [ref: > Team.id]
+  playerId         uuid        [ref: > Player.id]
+  isCaptain        boolean     [default: false]
+  isWicketkeeper   boolean     [default: false]
+  createdAt        datetime
+  updatedAt        datetime
+
+  Indexes {
+    (matchId, teamId, playerId) [unique, name: "match_squad_unique"]
   }
 }
